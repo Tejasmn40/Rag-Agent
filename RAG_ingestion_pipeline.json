@@ -1,0 +1,381 @@
+{
+  "name": "RAG_ingestion_pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -1104,
+        -336
+      ],
+      "id": "031c34a0-db23-49bd-8dc1-b626fe72ad17",
+      "name": "Extract from pdf"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -1776,
+        -336
+      ],
+      "id": "5fb36468-5397-41cb-b37e-c696f8afec2c",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1uaZi6i_9xLnR_-FQuaJBsRSFAap6-SMh",
+          "mode": "list",
+          "cachedResultName": "RAG AGENT",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1uaZi6i_9xLnR_-FQuaJBsRSFAap6-SMh"
+        },
+        "event": "fileCreated",
+        "options": {
+          "fileType": "all"
+        }
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2000,
+        -432
+      ],
+      "id": "9e1841ea-1a84-4236-886c-2adb7acdd831",
+      "name": "File created",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "DZk4dgPIfycEqpIK",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1uaZi6i_9xLnR_-FQuaJBsRSFAap6-SMh",
+          "mode": "list",
+          "cachedResultName": "RAG AGENT",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1uaZi6i_9xLnR_-FQuaJBsRSFAap6-SMh"
+        },
+        "event": "fileUpdated",
+        "options": {
+          "fileType": "all"
+        }
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2000,
+        -240
+      ],
+      "id": "fc01ad63-a414-468d-adbd-542f301d804f",
+      "name": "File Updated",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "DZk4dgPIfycEqpIK",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1328,
+        -336
+      ],
+      "id": "5852dd65-b9c0-4c1c-bd28-092ca83c55be",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "DZk4dgPIfycEqpIK",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst text = input.text;\nconst filename = $('Download file').first().json.name || 'Unknown';\nconst chunkSize = 1500;\nconst overlap = 200;\nconst chunks = [];\n\nfor (let i = 0; i < text.length; i += (chunkSize - overlap)) {\n  const chunk = text.substring(i, Math.min(i + chunkSize, text.length));\n  \n  if (chunk.trim().length > 50) {\n    chunks.push({\n      json: {\n        pageContent: chunk,\n        metadata: {\n          source: filename,\n          chunk: Math.floor(i / (chunkSize - overlap)) + 1\n        }\n      }\n    });\n  }\n}\n\nreturn chunks;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -880,
+        -336
+      ],
+      "id": "3c6cf676-bfd1-4a2a-a07c-3cbfbcd3fed5",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-nomic-embed-text-v1.5",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -424,
+        -112
+      ],
+      "id": "da5ecf92-ac8d-4c94-a730-3874131f44db",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "aKBq66bWrejOnPLv",
+          "name": "OpenAi account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "rag-collection",
+          "mode": "list"
+        },
+        "options": {
+          "contentPayloadKey": "pageContent"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        -432,
+        -336
+      ],
+      "id": "fdfdcdf4-34ed-417b-ac34-5117b24bc36b",
+      "name": "Qdrant Vector Store1",
+      "credentials": {
+        "qdrantApi": {
+          "id": "mpNfC81eAm8mJLXl",
+          "name": "QdrantApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.pageContent }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        -296,
+        -112
+      ],
+      "id": "f982e867-83d8-4f8a-9a7d-a0d3c641dbdb",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "84136576-fb98-4a09-a1da-88acf97ff785",
+              "leftValue": "={{ $json.pageContent.length }}",
+              "rightValue": "={{50}}",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -656,
+        -336
+      ],
+      "id": "fad94048-de41-4698-9b3d-112bb7de9550",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:6333/collections/rag-collection/points/delete",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"filter\": {\n    \"must\": [\n      {\n        \"key\": \"metadata.source\",\n        \"match\": { \"value\": \"{{ $json.name }}\" }\n      }\n    ]\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1552,
+        -336
+      ],
+      "id": "aff797ca-55c0-42c6-bd5e-d445ca277ef0",
+      "name": "HTTP Request"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Extract from pdf": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "File created": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "File Updated": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Extract from pdf",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Qdrant Vector Store1",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "64bb708f-9b24-466b-9357-eb8869c51bca",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aa3a384e8d4a6d041dc337be44255c41a2b5445ada53372e889a20fa18c990fc"
+  },
+  "id": "fADaJ1AgbbP9FjtZ",
+  "tags": []
+}

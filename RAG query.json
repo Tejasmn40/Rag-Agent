@@ -1,0 +1,204 @@
+{
+  "name": "RAG query",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "=You are a document QA assistant.\n\nMANDATORY: You MUST call the \"Qdrant Vector Store\" tool for EVERY single question without exception. \n\nWORKFLOW - follow exactly:\nSTEP 1: Call the Qdrant Vector Store tool with the user's question as input.\nSTEP 2: Read the results returned by the tool.\nSTEP 3: Answer based only on those results.\n\nYou are FORBIDDEN from answering without calling the tool first.\nIf you answer without calling the tool, your response is wrong.\nCall the tool NOW before doing anything else.",
+          "maxIterations": 25
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        128,
+        0
+      ],
+      "id": "550ea00e-68ac-4160-8e26-70db81be739a",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -400,
+        0
+      ],
+      "id": "16e62ac1-4b39-450a-969f-6518291b890e",
+      "name": "When chat message received",
+      "webhookId": "e632b0fc-4a3f-44d5-8963-b4197dbe96b3"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Search and retrieve relevant document chunks from the knowledge base. \nAlways use this tool before answering any question.\nInput: a plain text search query string describing what you are looking for.\nExample input: \"security levels IEC 62443\"\nDo not wrap the input in JSON or objects, just pass a plain string.",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "rag-collection",
+          "mode": "list",
+          "cachedResultName": "rag-collection"
+        },
+        "topK": 15,
+        "options": {
+          "contentPayloadKey": "pageContent"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        288,
+        224
+      ],
+      "id": "c9068edf-245a-44d9-a093-203ecd17ee8d",
+      "name": "Qdrant Vector Store",
+      "credentials": {
+        "qdrantApi": {
+          "id": "mpNfC81eAm8mJLXl",
+          "name": "QdrantApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-nomic-embed-text-v1.5",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        368,
+        464
+      ],
+      "id": "bbf6be15-34f8-47c5-8cc1-007c9c29f259",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "aKBq66bWrejOnPLv",
+          "name": "OpenAi account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "qwen2.5-7b-instruct",
+          "mode": "list",
+          "cachedResultName": "qwen2.5-7b-instruct"
+        },
+        "responsesApiEnabled": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        32,
+        224
+      ],
+      "id": "3986457a-1f03-444d-a335-556f050882cd",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "aKBq66bWrejOnPLv",
+          "name": "OpenAi account 3"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        144,
+        352
+      ],
+      "id": "fd328125-a52b-41e0-8ca6-b53aece3e028",
+      "name": "Simple Memory"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "AI Agent": {
+      "main": [
+        [],
+        []
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ],
+      "ai_vectorStore": [
+        []
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "50cfbd1b-a2cf-41af-a40e-734c55886fbf",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aa3a384e8d4a6d041dc337be44255c41a2b5445ada53372e889a20fa18c990fc"
+  },
+  "id": "s7h6Jb5p4D5S0VZ1",
+  "tags": []
+}
