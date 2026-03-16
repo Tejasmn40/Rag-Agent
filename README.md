@@ -25,12 +25,38 @@ Google Drive Folder
 
 ---
 
+## 📸 Screenshots
+
+### Ingestion Pipeline
+![Ingestion Pipeline](screenshots/pipeline_ingestion.png)
+
+### Query Pipeline
+![Query Pipeline](screenshots/pipeline_query.png)
+
+### Demo — Chatting with the RAG paper
+
+![What is RAG?](screenshots/chat_1_what_is_rag.png)
+
+![Datasets used](screenshots/chat_2_datasets.png)
+
+![Generator model](screenshots/chat_3_generator.png)
+
+![Knowledge update](screenshots/chat_4_knowledge_update.png)
+
+![T5 comparison](screenshots/chat_5_t5_comparison.png)
+
+### Hallucination Guard — Out of scope questions are handled gracefully
+![Hallucination guard](screenshots/chat_hallucination_guard.png)
+
+---
+
 ## ✨ Features
 
 - **Automatic ingestion** — drop a PDF into a Google Drive folder and it's indexed within a minute
 - **Deduplication** — updating a file re-indexes it cleanly without leaving stale vectors
 - **Conversational memory** — the agent remembers context across messages in the same session
 - **Grounded answers** — the agent is forbidden from answering without first querying the vector store
+- **Hallucination guard** — if the answer isn't in the document, the agent says so instead of making something up
 - **Local vector DB** — Qdrant runs locally via Docker, no cloud vector DB costs
 
 ---
@@ -110,7 +136,17 @@ In n8n, set up the following credentials:
 ```
 ├── RAG_ingestion_pipeline.json   # n8n ingestion workflow
 ├── RAG_query.json                # n8n query workflow
-└── README.md
+├── RAG_doc.pdf                   # Sample test document (original RAG paper)
+├── README.md
+└── screenshots/                  # Demo screenshots
+    ├── pipeline_ingestion.png
+    ├── pipeline_query.png
+    ├── chat_1_what_is_rag.png
+    ├── chat_2_datasets.png
+    ├── chat_3_generator.png
+    ├── chat_4_knowledge_update.png
+    ├── chat_5_t5_comparison.png
+    └── chat_hallucination_guard.png
 ```
 
 ---
@@ -134,6 +170,7 @@ You can tweak these values in the workflows:
 - Chunking is character-based, not paragraph-aware — may split sentences mid-way
 - `indexed_vectors_count` stays 0 until points exceed the indexing threshold (10,000) — this is normal Qdrant behavior and doesn't affect search
 - No source citation in responses — the agent answers from context but doesn't reference specific page numbers
+- Small LLMs (7B) may confuse closely related concepts even when the correct context is retrieved
 
 ---
 
@@ -146,7 +183,3 @@ You can tweak these values in the workflows:
 - [ ] Multi-language support via translation node
 
 ---
-
-## 📄 License
-
-MIT
