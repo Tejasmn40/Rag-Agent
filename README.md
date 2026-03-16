@@ -28,7 +28,7 @@ Google Drive Folder
 ## 📸 Screenshots
 
 ### Ingestion Pipeline
-![Ingestion Pipeline](screenshots/pipeline_ingestion.png)
+![Ingestion Pipeline](screenshots/screenshots/pipeline_ingestion.png)
 
 ### Query Pipeline
 ![Query Pipeline](screenshots/pipeline_query.png)
